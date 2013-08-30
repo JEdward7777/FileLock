@@ -29,9 +29,11 @@ class FileLock(object):
             an exception.
         """
         start_time = time.time()
+        pid = os.getpid()
         while True:
             try:
                 self.fd = os.open(self.lockfile, os.O_CREAT|os.O_EXCL|os.O_RDWR)
+                os.write(self.fd, "%d" % pid)
                 break;
             except OSError as e:
                 if e.errno != errno.EEXIST:
