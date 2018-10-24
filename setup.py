@@ -6,7 +6,7 @@ setup(
     author='Evan Fosmark',
     author_email='me@evanfosmark.com',
     packages=['gsfilelock','gsfilelock.test'],
-    url='https://github.com/JEdward7777/FileLock',
+    url='https://github.com/JEdward7777/GsFileLock',
     license='LICENSE.txt',
     description='Google Storage File locking library',
     long_description=open('README.txt').read(),
