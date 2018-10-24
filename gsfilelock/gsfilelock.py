@@ -28,6 +28,7 @@
 import os
 import time
 import errno
+import random
 
 class GsFileLockException(Exception):
     pass
