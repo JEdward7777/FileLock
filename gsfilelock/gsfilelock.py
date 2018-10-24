@@ -29,7 +29,7 @@ import os
 import time
 import errno
 
-class FileLockException(Exception):
+class GsFileLockException(Exception):
     pass
 
 class GsFileLock(object):
@@ -87,7 +87,7 @@ class GsFileLock(object):
             
             if not self.is_locked:
                 if (time.time() - start_time) >= self.timeout:
-                    raise FileLockException("Timeout occured.")
+                    raise GsFileLockException("Timeout occured.")
                 time.sleep(self.delay)
         
 
@@ -120,7 +120,7 @@ class GsFileLock(object):
 
 
     def __del__(self):
-        """ Make sure that the FileLock instance doesn't leave a lockfile
+        """ Make sure that the GsFileLock instance doesn't leave a lockfile
             lying around.
         """
         self.release()
