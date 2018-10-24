@@ -8,6 +8,6 @@ setup(
     packages=['gsfilelock','gsfilelock.test'],
     url='https://github.com/JEdward7777/FileLock',
     license='LICENSE.txt',
-    description='File locking library',
+    description='Google Storage File locking library',
     long_description=open('README.txt').read(),
 )
