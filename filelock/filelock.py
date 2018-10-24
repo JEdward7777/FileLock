@@ -36,19 +36,26 @@ class FileLock(object):
     """ A file locking mechanism that has context-manager support so
         you can use it in a with statement. This should be relatively cross
         compatible as it doesn't rely on msvcrt or fcntl for the locking.
+        Compatible with Google Buckets.  Includes a delay each time a lock is acquired
+        to allow for consistency to propigate.
     """
 
-    __slots__ = ('fd', 'is_locked', 'lockfile', 'file_name', 'timeout', 'delay')
+    __slots__ = ('is_locked', 'consistency_time', 'lockfile', 'file_name', 'timeout', 'delay')
 
-    def __init__(self, file_name, timeout=10, delay=.05):
+    def __init__(self, file_name, consistency_time, timeout=10, delay=.05, id=None):
         """ Prepare the file locker. Specify the file to lock and optionally
             the maximum timeout and the delay between each attempt to lock.
         """
         self.is_locked = False
+        self.consistency_time = consistency_time
         self.lockfile = os.path.abspath(os.path.expanduser(os.path.expandvars("%s.lock" % file_name)))
         self.file_name = file_name
         self.timeout = timeout
         self.delay = delay
+        if id:
+            self.id = id
+        else:
+            self.id = random.uniform(0,sys.maxsize)
 
 
     def acquire(self):
@@ -59,18 +66,30 @@ class FileLock(object):
         """
         start_time = time.time()
         pid = os.getpid()
-        while True:
-            try:
-                self.fd = os.open(self.lockfile, os.O_CREAT|os.O_EXCL|os.O_RDWR)
-                os.write(self.fd, "%d" % pid)
-                break;
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    raise
+        checkString = str(pid) + "." + str( self.id )
+        while not self.is_locked:
+            
+            if not tf.gfile.Exists( self.lockfile ):
+                #write our number to it.
+                with tf.gfile.Open( self.lockfile, "w" ) as writer:
+                    writer.write( checkString )
+
+                #give time for someone else to accidentally overwrite our file.
+                time.sleep( self.consistency_time )
+
+                #now read the file again and see if it has our number.
+                with tf.gfile.Open( self.lockfile, "r" ) as reader:
+                    readString = reader.readline()
+
+                #if it does then say we won.
+                if readString == checkString:
+                    self.is_locked = True
+            
+            if not self.is_locked:
                 if (time.time() - start_time) >= self.timeout:
                     raise FileLockException("Timeout occured.")
                 time.sleep(self.delay)
-        self.is_locked = True
+        
 
 
     def release(self):
@@ -79,8 +98,7 @@ class FileLock(object):
             called at the end.
         """
         if self.is_locked:
-            os.close(self.fd)
-            os.unlink(self.lockfile)
+            tf.gfile.Remove( self.lockfile )
             self.is_locked = False
 
 
