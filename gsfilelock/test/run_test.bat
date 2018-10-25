@@ -1,3 +1,3 @@
 cd ..\..
-py -m gsfilelock.test.test
+py -m gsfilelock.test.test || pause
 ::pause

@@ -31,9 +31,17 @@ import errno
 import random
 import sys
 import tensorflow as tf
+import datetime
 
 class GsFileLockException(Exception):
     pass
+
+def file_age( path ):
+  file_stats = tf.gfile.Stat( path )
+  time_ns = file_stats.mtime_nsec
+  time_s = int( time_ns/1000000000 )
+  datetime_inst = datetime.datetime.fromtimestamp( time_s )
+  return datetime.datetime.now()-datetime_inst
 
 class GsFileLock(object):
     """ A file locking mechanism that has context-manager support so
@@ -43,9 +51,9 @@ class GsFileLock(object):
         to allow for consistency to propigate.
     """
 
-    __slots__ = ('is_locked', 'consistency_time', 'lockfile', 'file_name', 'timeout', 'delay', 'id')
+    __slots__ = ('is_locked', 'consistency_time', 'lockfile', 'file_name', 'timeout', 'delay', 'id', 'lock_expire_hr' )
 
-    def __init__(self, file_name, consistency_time, timeout=10, delay=.05, id=None):
+    def __init__(self, file_name, consistency_time, timeout=10, delay=.05, id=None, lock_expire_hr=None):
         """ Prepare the file locker. Specify the file to lock and optionally
             the maximum timeout and the delay between each attempt to lock.
         """
@@ -62,6 +70,7 @@ class GsFileLock(object):
             self.id = id
         else:
             self.id = random.uniform(0,sys.maxsize)
+        self.lock_expire_hr = lock_expire_hr
 
 
     def acquire(self):
@@ -74,8 +83,9 @@ class GsFileLock(object):
         pid = os.getpid()
         checkString = "<" + str(pid) + "." + str( self.id ) + ">"
         while not self.is_locked:
+
             
-            if not tf.gfile.Exists( self.lockfile ):
+            if not tf.gfile.Exists( self.lockfile ) or file_age(self.lockfile) > datetime.timedelta(hours=self.lock_expire_hr):
                 print( "writing to lock file at " + str( self.lockfile) )
                 #write our number to it.
                 with tf.gfile.Open( self.lockfile, "w" ) as writer:
