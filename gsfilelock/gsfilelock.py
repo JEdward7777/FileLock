@@ -97,7 +97,7 @@ class GsFileLock(object):
             #    print( "file currently exists" + self.lockfile )
             
             if not self.is_locked:
-                if (time.time() - start_time) >= self.timeout:
+                if self.timeout is None or (time.time() - start_time) >= self.timeout:
                     raise GsFileLockException("Timeout occured.")
                 time.sleep(self.delay)
         
