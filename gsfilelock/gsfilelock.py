@@ -29,6 +29,8 @@ import os
 import time
 import errno
 import random
+import sys
+import tensorflow as tf
 
 class GsFileLockException(Exception):
     pass
@@ -41,7 +43,7 @@ class GsFileLock(object):
         to allow for consistency to propigate.
     """
 
-    __slots__ = ('is_locked', 'consistency_time', 'lockfile', 'file_name', 'timeout', 'delay')
+    __slots__ = ('is_locked', 'consistency_time', 'lockfile', 'file_name', 'timeout', 'delay', 'id')
 
     def __init__(self, file_name, consistency_time, timeout=10, delay=.05, id=None):
         """ Prepare the file locker. Specify the file to lock and optionally
@@ -67,13 +69,16 @@ class GsFileLock(object):
         """
         start_time = time.time()
         pid = os.getpid()
-        checkString = str(pid) + "." + str( self.id )
+        checkString = "<" + str(pid) + "." + str( self.id ) + ">"
         while not self.is_locked:
             
             if not tf.gfile.Exists( self.lockfile ):
+                print( "writing to lock file at " + str( self.lockfile) )
                 #write our number to it.
                 with tf.gfile.Open( self.lockfile, "w" ) as writer:
                     writer.write( checkString )
+
+                print( "Maybe..." + checkString )
 
                 #give time for someone else to accidentally overwrite our file.
                 time.sleep( self.consistency_time )
@@ -83,8 +88,10 @@ class GsFileLock(object):
                     readString = reader.readline()
 
                 #if it does then say we won.
-                if readString == checkString:
+                if readString.startswith( checkString ):
                     self.is_locked = True
+            #else:
+            #    print( "file currently exists" + self.lockfile )
             
             if not self.is_locked:
                 if (time.time() - start_time) >= self.timeout:
