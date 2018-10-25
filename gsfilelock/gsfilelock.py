@@ -52,7 +52,7 @@ class GsFileLock(object):
         self.is_locked = False
         self.consistency_time = consistency_time
         if file_name.startswith( "gs:/" ):
-            self.lockfile = file_name
+            self.lockfile = "%s.lock" % file_name
         else:
             self.lockfile = os.path.join(os.getcwd(), "%s.lock" % file_name)
         self.file_name = file_name
@@ -98,7 +98,7 @@ class GsFileLock(object):
             
             if not self.is_locked:
                 if self.timeout is None or (time.time() - start_time) >= self.timeout:
-                    raise GsFileLockException("Timeout occured.")
+                    raise GsFileLockException("Timeout occurred.")
                 time.sleep(self.delay)
         
 
