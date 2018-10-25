@@ -125,10 +125,3 @@ class GsFileLock(object):
         """
         if self.is_locked:
             self.release()
-
-
-    def __del__(self):
-        """ Make sure that the GsFileLock instance doesn't leave a lockfile
-            lying around.
-        """
-        self.release()
