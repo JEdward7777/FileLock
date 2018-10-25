@@ -51,7 +51,10 @@ class GsFileLock(object):
         """
         self.is_locked = False
         self.consistency_time = consistency_time
-        self.lockfile = os.path.join(os.getcwd(), "%s.lock" % file_name)
+        if file_name.startwith( "gs: " ):
+            self.lockfile = file_name
+        else:
+            self.lockfile = os.path.join(os.getcwd(), "%s.lock" % file_name)
         self.file_name = file_name
         self.timeout = timeout
         self.delay = delay
