@@ -85,7 +85,9 @@ class GsFileLock(object):
         while not self.is_locked:
 
             
-            if not tf.gfile.Exists( self.lockfile ) or file_age(self.lockfile) > datetime.timedelta(hours=self.lock_expire_hr):
+            if not tf.gfile.Exists( self.lockfile ) or \
+                    (self.lock_expire_hr is not None and \
+                    file_age(self.lockfile) > datetime.timedelta(hours=self.lock_expire_hr) ):
                 print( "writing to lock file at " + str( self.lockfile) )
                 #write our number to it.
                 with tf.gfile.Open( self.lockfile, "w" ) as writer:
